@@ -2,6 +2,11 @@
 name = "between"
 version = "0.1.0"
 edition = "2018"
+description = "Generate strings that can sort between two other strings."
+homepage = "https://github.com/dashed/between"
+repository = "https://github.com/dashed/between"
+readme = "README.md"
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
