@@ -198,6 +198,12 @@ mod tests {
         );
         assert_eq!(between.low(), '!');
         assert_eq!(between.high(), '~');
+
+        assert_eq!(between.after("!!!!").unwrap(), "V");
+        assert!(between.before("!!!!").is_none());
+
+        assert!(between.after("~~~~").is_none());
+        assert_eq!(between.before("~~~~").unwrap(), "V");
     }
 
     #[test]
