@@ -92,6 +92,15 @@ impl Between {
         }
 
         // invariant: this < that (in lexographical order/ASCII order)
+        //
+        // - In lexicographical order/ASCII order, you compare character by character on each string until a difference
+        //   is found.
+        // - The ASCII value of the characters are used for the comparison.
+        // - A lower ASCII value means the character is less than the other character with a higher ASCII value.
+        //   In other words, the character is deemed lexicographically smaller than the other character.
+        // - If the characters are the same, then you move on to the next character in the string.
+        // - In lexicographical order, if a string is a prefix of another string (meaning it matches the beginning of
+        //   the longer string), it's considered "smaller" and comes earlier in the sorted order.
 
         let this_chars: Vec<char> = this.chars().collect();
         let that_chars: Vec<char> = that.chars().collect();
@@ -131,6 +140,8 @@ impl Between {
                     // For 2 character sets, we rely on: index >= guard_max_len
                     ((this_char_position as f64 + that_char_position as f64) / 2.0).round() as usize
                 } else {
+                    // We use this_char_position so that the character candidate will be less than that_char_position
+                    // in lexicographical order/ASCII order.
                     this_char_position
                 };
 
