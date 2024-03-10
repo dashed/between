@@ -91,14 +91,15 @@ impl Between {
             return None;
         }
 
-        // invariant: this < that
+        // invariant: this < that (in lexographical order/ASCII order)
 
         let this_chars: Vec<char> = this.chars().collect();
         let that_chars: Vec<char> = that.chars().collect();
 
         let mut between_string: Vec<char> = vec![];
+        // This guard exists to prevent potential infinite loops.
         let guard = this.len() + that.len();
-        let guard2 = cmp::max(this.len(), that.len());
+        let guard_max_len = cmp::max(this.len(), that.len());
         let mut index = 0;
 
         while index <= guard {
@@ -109,13 +110,25 @@ impl Between {
 
             let that_char_position: usize = {
                 let that_char = that_chars.get(index).unwrap_or(&self.high);
-                *self.chars_lookup.get(that_char).unwrap_or(&0)
+                *self.chars_lookup.get(that_char).unwrap()
             };
 
+            // invariant: this_char_position <= that_char_position
+
             let char_candidate: char = {
+                // If there are characters between this_char_position and that_char_position,
+                // then we can pick the midpoint of the character candidate between them.
+                // We also do this if we go past the maximum length of of either this or that.
                 let char_position: usize = if ((this_char_position + 1) < that_char_position)
-                    || index >= guard2
+                    || index >= guard_max_len
                 {
+                    // invariant: self.chars.len() >= 2
+                    // If (this_char_position + 1) < that_char_position, then:
+                    //    0 <= this_char_position <= max(self.chars.len() - 3, 0)
+                    //    2 <= that_char_position <= self.chars.len() - 1
+                    // This implies self.chars.len() >= 3. As in, this works for character sets of size 3 or more.
+                    //
+                    // For 2 character sets, we rely on: index >= guard_max_len
                     ((this_char_position as f64 + that_char_position as f64) / 2.0).round() as usize
                 } else {
                     this_char_position
@@ -201,9 +214,15 @@ mod tests {
 
         assert_eq!(between.after("!!!!").unwrap(), "V");
         assert!(between.before("!!!!").is_none());
+        assert_eq!(between.before("!!!0").unwrap(), "!!!!V");
 
         assert!(between.after("~~~~").is_none());
         assert_eq!(between.before("~~~~").unwrap(), "V");
+        assert!(between.after("~~~0").is_none());
+        assert_eq!(between.after("0~~0").unwrap(), "W");
+        assert!("0~~0" < "W");
+
+        assert_eq!(between.between("A", "B").unwrap(), "AV");
     }
 
     #[test]
@@ -223,6 +242,8 @@ mod tests {
 
         assert!(between.low() == '0');
         assert!(between.high() == '1');
+
+        assert_eq!(between.between("0", '1').unwrap(), "01");
 
         let result = between.between('0', "001");
         assert!(result.is_some());
