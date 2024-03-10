@@ -215,6 +215,9 @@ mod tests {
         assert!(between.valid("abc") == false);
         assert!(between.valid("010") == true);
 
+        assert!(between.low() == '0');
+        assert!(between.high() == '1');
+
         let result = between.between('0', "001");
         assert!(result.is_some());
         let result = result.unwrap();
@@ -249,5 +252,14 @@ mod tests {
 
         assert_eq!(between.before("11").unwrap(), "001");
         assert!(between.before("11").unwrap() < "11".to_string());
+
+        assert_eq!(between.after("0001").unwrap(), "00011");
+        assert_eq!(between.before("0001").unwrap(), "00001");
+
+        assert!(between.after("1111").is_none());
+        assert_eq!(between.before("1111").unwrap(), "00001");
+
+        assert!(between.after("1110").is_none());
+        assert_eq!(between.before("1110").unwrap(), "0001");
     }
 }
