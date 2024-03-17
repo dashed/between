@@ -1,0 +1,64 @@
+name: Rust
+
+on: [push]
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - stable
+          - beta
+          - nightly
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust Toolchain
+        run: rustup toolchain install ${{ matrix.rust }} --profile minimal --no-self-update
+      - run: cargo check
+
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - stable
+          - beta
+          - nightly
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust Toolchain
+        run: rustup toolchain install ${{ matrix.rust }} --profile minimal --no-self-update
+      - run: cargo test
+
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - stable
+          - beta
+          - nightly
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust Toolchain
+        run: rustup toolchain install ${{ matrix.rust }} --profile minimal --component rustfmt --no-self-update
+      - run: cargo fmt --all -- --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - stable
+          - beta
+          - nightly
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust Toolchain
+        run: rustup toolchain install ${{ matrix.rust }} --profile minimal --component clippy --no-self-update
+      - run: cargo clippy
