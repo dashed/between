@@ -100,7 +100,7 @@ impl Between {
         //   In other words, the character is deemed lexicographically smaller than the other character.
         // - If the characters are the same, then you move on to the next character in the string.
         // - In lexicographical order, if a string is a prefix of another string (meaning it matches the beginning of
-        //   the longer string), it's considered "smaller" and comes earlier in the sorted order.
+        //   the longer string), it's considered "smaller".
 
         let this_chars: Vec<char> = this.chars().collect();
         let that_chars: Vec<char> = that.chars().collect();
