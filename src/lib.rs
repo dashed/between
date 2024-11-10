@@ -300,4 +300,238 @@ mod tests {
         assert!(between.after("1110").is_none());
         assert_eq!(between.before("1110").unwrap(), "0001");
     }
+
+    #[test]
+    fn test_between_strings_with_same_prefix() {
+        let between = Between::new(vec!['a', 'b']);
+
+        // Test between strings with same prefix
+        assert_eq!(between.between("a", "ab").unwrap(), "aab");
+        assert_eq!(between.between("aa", "ab").unwrap(), "aab");
+        assert_eq!(between.between("a", "b").unwrap(), "ab");
+    }
+
+    #[test]
+    fn test_between_empty_and_non_empty_string() {
+        let between = Between::new(vec!['a', 'b', 'c']);
+
+        // Test between empty string and a non-empty string
+        assert!(between.between("", "a").is_none());
+        assert!(between.between("", "aa").is_none());
+        assert!(between.between("", "").is_none());
+    }
+
+    #[test]
+    fn test_between_with_full_range_of_chars() {
+        let between = Between::init();
+
+        // Test between strings using the default character set
+        assert_eq!(between.between("A", "B").unwrap(), "AV");
+        assert_eq!(between.between("A", "A~").unwrap(), "AV");
+        assert_eq!(between.between("A", "A!"), None);
+    }
+
+    #[test]
+    fn test_between_with_special_characters() {
+        let between = Between::new(vec!['!', '@', '#', '$', '%']);
+
+        // Test between strings with special characters
+        assert_eq!(between.between("!", "%").unwrap(), "$");
+        assert_eq!(between.between("!$", "!%").unwrap(), "!$$");
+        assert!(between.between("%", "!").is_none());
+    }
+
+    #[test]
+    fn test_before_and_after_methods() {
+        let between = Between::new(vec!['0', '1']);
+
+        // Test after method
+        assert_eq!(between.after("0").unwrap(), "01");
+        assert_eq!(between.after("01").unwrap(), "011");
+
+        // Test before method
+        assert_eq!(between.before("1").unwrap(), "01");
+        assert_eq!(between.before("10").unwrap(), "01");
+    }
+
+    #[test]
+    fn test_validity_checks() {
+        let between = Between::new(vec!['x', 'y', 'z']);
+
+        // Test valid strings
+        assert!(between.valid("x"));
+        assert!(between.valid("xyz"));
+        assert!(!between.valid(""));
+        assert!(!between.valid("abc"));
+    }
+
+    #[test]
+    fn test_empty_strings() {
+        let between = Between::new(vec!['a', 'b', 'c']);
+
+        // Both strings are empty
+        assert!(between.between("", "").is_none());
+
+        // 'this' is empty, 'that' is valid
+        assert!(between.between("", "a").is_none());
+
+        // 'that' is empty, 'this' is valid
+        assert!(between.between("a", "").is_none());
+    }
+
+    #[test]
+    fn test_strings_with_low_high_chars() {
+        let between = Between::new(vec!['a', 'b', 'c']);
+
+        // 'this' is at low boundary
+        assert_eq!(between.between("a", "b").unwrap(), "ab");
+
+        // 'that' is at high boundary
+        assert_eq!(between.between("b", "c").unwrap(), "bb");
+
+        // Both 'this' and 'that' are at boundaries
+        assert_eq!(between.between("a", "c").unwrap(), "b");
+    }
+
+    #[test]
+    fn test_prefix_cases() {
+        let between = Between::new(vec!['a', 'b', 'c']);
+
+        // 'this' is a prefix of 'that', but there is no string strictly between
+        assert!(between.between("a", "aa").is_none());
+
+        // 'that' is a prefix of 'this' (should return None)
+        assert!(between.between("aa", "a").is_none());
+
+        // 'this' equals 'that' (should return None)
+        assert!(between.between("abc", "abc").is_none());
+    }
+
+    #[test]
+    fn test_non_alphanumeric_chars() {
+        let between = Between::new(vec!['!', '@', '#', '$', '%']);
+
+        // Test between special characters
+        assert_eq!(between.between("!", "%").unwrap(), "$");
+        assert!(between.between("%", "!").is_none());
+    }
+
+    #[test]
+    fn test_full_char_set() {
+        let between = Between::init();
+
+        // Test between two strings using full default character set
+        assert_eq!(between.between("A", "B").unwrap(), "AV");
+
+        // Test when 'this' is high and 'that' is low (should return None)
+        assert!(between.between("~", "!").is_none());
+    }
+
+    #[test]
+    fn test_after_before_methods_with_boundaries() {
+        let between = Between::new(vec!['0', '1']);
+
+        // After the highest possible string (should return None)
+        assert!(between.after("1").is_none());
+
+        // Before the lowest possible string (should return None)
+        assert!(between.before("0").is_none());
+
+        // After a string consisting of '1's
+        assert!(between.after("111").is_none());
+
+        // Before a string consisting of '0's
+        assert!(between.before("000").is_none());
+    }
+
+    #[test]
+    fn test_large_strings() {
+        let between = Between::new(vec!['a', 'b', 'c']);
+
+        // Test with very long strings
+        let long_a = "a".repeat(1000);
+        let long_c = "c".repeat(1000);
+
+        // The minimal string between long_a and long_c is "b"
+        assert_eq!(between.between(&long_a, &long_c).unwrap(), "b");
+
+        // Test after a long string
+        assert_eq!(between.after(&long_a).unwrap(), "b");
+
+        // Test before a long string
+        assert_eq!(between.before(&long_c).unwrap(), "b");
+    }
+
+    #[test]
+    fn test_invalid_inputs() {
+        let between = Between::new(vec!['x', 'y', 'z']);
+
+        // 'this' contains invalid characters
+        assert!(between.between("a", "z").is_none());
+
+        // 'that' contains invalid characters
+        assert!(between.between("x", "1").is_none());
+
+        // Both contain invalid characters
+        assert!(between.between("1", "a").is_none());
+    }
+
+    #[test]
+    fn test_characters_with_duplicates() {
+        let between = Between::new(vec!['a', 'b', 'b', 'c', 'c', 'c']);
+
+        // Duplicates should be removed
+        assert_eq!(between.chars(), &vec!['a', 'b', 'c']);
+
+        // Test between
+        assert_eq!(between.between("a", "c").unwrap(), "b");
+    }
+
+    #[test]
+    fn test_single_character_set() {
+        let result = std::panic::catch_unwind(|| Between::new(vec!['x']));
+        assert!(
+            result.is_err(),
+            "Should panic when only one character is provided"
+        );
+    }
+
+    #[test]
+    fn test_edge_case_characters() {
+        let between = Between::new(vec!['a', 'b', 'c', 'd', 'e', 'f']);
+
+        // Find a string strictly between "abcde" and "abcdf"
+        assert_eq!(between.between("abcde", "abcdf").unwrap(), "abcded");
+
+        // Test when 'this' is longer than 'that' (should return None)
+        assert!(between.between("abcdef", "abcde").is_none());
+    }
+
+    #[test]
+    fn test_numeric_characters() {
+        let between = Between::new(vec!['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
+
+        // Test between numeric strings
+        assert_eq!(between.between("123", "125").unwrap(), "124");
+
+        // Test after a numeric string (should return None because "999" is the highest)
+        assert!(between.after("999").is_none());
+
+        // Test before a numeric string
+        assert_eq!(between.before("100").unwrap(), "05");
+    }
+
+    #[test]
+    fn test_unicode_characters() {
+        let between = Between::new(vec!['α', 'β', 'γ', 'δ', 'ε']);
+
+        // Test between Unicode strings
+        assert_eq!(between.between("α", "γ").unwrap(), "β");
+
+        // Test after a Unicode string
+        assert_eq!(between.after("ε").is_none(), true);
+
+        // Test before a Unicode string
+        assert_eq!(between.before("α").is_none(), true);
+    }
 }
