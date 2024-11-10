@@ -6,6 +6,8 @@ use std::iter::FromIterator;
 
 use itertools::Itertools;
 
+/// A struct that provides functionality to find a string that is lexicographically
+/// between two given strings, using a specified set of characters.
 #[derive(Debug, Clone)]
 pub struct Between {
     chars: Vec<char>,
@@ -16,6 +18,15 @@ pub struct Between {
 }
 
 impl Between {
+    /// Creates a new `Between` instance with a given set of characters.
+    ///
+    /// # Arguments
+    ///
+    /// * `chars` - A vector of characters to be used for generating between strings.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the provided character set has fewer than two distinct characters.
     pub fn new(chars: Vec<char>) -> Self {
         let chars: Vec<char> = chars.into_iter().unique().sorted_unstable().collect();
         assert!(
@@ -39,22 +50,35 @@ impl Between {
         }
     }
 
+    /// Initializes a `Between` instance with a default set of characters.
     pub fn init() -> Self {
         Default::default()
     }
 
+    /// Returns a reference to the vector of characters used by this instance.
     pub fn chars(&self) -> &Vec<char> {
         &self.chars
     }
 
+    /// Returns the highest character in the character set.
     pub fn high(&self) -> char {
         self.high
     }
 
+    /// Returns the lowest character in the character set.
     pub fn low(&self) -> char {
         self.low
     }
 
+    /// Checks if a given string is valid, i.e., contains only characters from the character set.
+    ///
+    /// # Arguments
+    ///
+    /// * `string` - A string to be validated.
+    ///
+    /// # Returns
+    ///
+    /// `true` if the string is valid, `false` otherwise.
     pub fn valid<S>(&self, string: S) -> bool
     where
         S: Into<String>,
@@ -71,6 +95,16 @@ impl Between {
         true
     }
 
+    /// Finds a string that is lexicographically between two given strings.
+    ///
+    /// # Arguments
+    ///
+    /// * `this` - The first string.
+    /// * `that` - The second string.
+    ///
+    /// # Returns
+    ///
+    /// An `Option<String>` that contains the between string if possible, or `None` if not.
     pub fn between<S, T>(&self, this: S, that: T) -> Option<String>
     where
         S: Into<String>,
@@ -228,6 +262,15 @@ impl Between {
         None
     }
 
+    /// Finds a string that is lexicographically after a given string.
+    ///
+    /// # Arguments
+    ///
+    /// * `before_string` - The string to find a successor for.
+    ///
+    /// # Returns
+    ///
+    /// An `Option<String>` that contains the successor string if possible, or `None` if not.
     pub fn after<S>(&self, before_string: S) -> Option<String>
     where
         S: Into<String>,
@@ -235,6 +278,15 @@ impl Between {
         self.between(before_string, self.high)
     }
 
+    /// Finds a string that is lexicographically before a given string.
+    ///
+    /// # Arguments
+    ///
+    /// * `after_string` - The string to find a predecessor for.
+    ///
+    /// # Returns
+    ///
+    /// An `Option<String>` that contains the predecessor string if possible, or `None` if not.
     pub fn before<S>(&self, after_string: S) -> Option<String>
     where
         S: Into<String>,
@@ -244,6 +296,7 @@ impl Between {
 }
 
 impl Default for Between {
+    /// Provides a default `Between` instance with a predefined set of characters.
     fn default() -> Self {
         let default_chars: Vec<char> =
             "!0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz~"
