@@ -71,23 +71,32 @@ impl Between {
         true
     }
 
-    /// Generate a string that can sort between `this` and `that`.
     pub fn between<S, T>(&self, this: S, that: T) -> Option<String>
     where
         S: Into<String>,
         T: Into<String>,
     {
-        // trim any self.low chars on the right
+        // Convert the input parameters into Strings.
+        // This allows us to work uniformly with the data regardless of the input types.
         let this: String = this.into();
-        let this: String = this.trim_end_matches(self.low).into();
-
         let that: String = that.into();
+
+        // Trim any trailing occurrences of the lowest character from 'this' and 'that'.
+        // This step is crucial because trailing low characters can complicate comparisons.
+        // For instance, 'abc' and 'abc!' (if '!' is the lowest character) might not compare as expected.
+        let this: String = this.trim_end_matches(self.low).into();
         let that: String = that.trim_end_matches(self.low).into();
 
+        // Validate the inputs:
+        // - Ensure 'this' is lexicographically less than 'that'.
+        // - Ensure both 'this' and 'that' are valid strings (contain only characters from 'self.chars').
+        // - We allow 'this' to be empty only if 'that' is valid and not empty.
         if this.cmp(&that) != Ordering::Less
             || (!this.is_empty() && !self.valid(&this))
             || !self.valid(&that)
         {
+            // If any of the above conditions are not met, we cannot find a 'between' string.
+            // Return 'None' to indicate that no valid string can be generated.
             return None;
         }
 
@@ -102,25 +111,56 @@ impl Between {
         // - In lexicographical order, if a string is a prefix of another string (meaning it matches the beginning of
         //   the longer string), it's considered "smaller".
 
+        // At this point, we have two valid strings 'this' and 'that', with 'this' < 'that'.
+        // Our goal is to construct a new string 'between_string' that is lexicographically
+        // between 'this' and 'that', using only characters from 'self.chars'.
+
+        // Convert 'this' and 'that' into vectors of characters for easier indexing and comparison.
         let this_chars: Vec<char> = this.chars().collect();
         let that_chars: Vec<char> = that.chars().collect();
 
+        // Initialize an empty vector to build the 'between_string'.
         let mut between_string: Vec<char> = vec![];
-        // This guard exists to prevent potential infinite loops.
+
+        // Set up a guard to prevent infinite loops.
+        // The maximum number of iterations is the sum of the lengths of 'this' and 'that'.
+        // This ensures that the loop will terminate even in edge cases.
         let guard = this.len() + that.len();
+
+        // Determine the maximum length between 'this' and 'that'.
+        // This helps us decide when we might need to consider adding new characters.
         let guard_max_len = cmp::max(this.len(), that.len());
+
+        // Initialize the index to 0, to start processing from the first character.
         let mut index = 0;
 
+        // Begin iterating over the characters to build 'between_string'.
         while index <= guard {
+            // For the current index, get the character positions in 'self.chars' for both 'this' and 'that'.
+
             let this_char_position: usize = {
+                // Attempt to get the character from 'this' at the current index.
+                // If 'this' is shorter than the current index, we default to 'self.low' (lowest character).
                 let this_char = this_chars.get(index).unwrap_or(&self.low);
+                // Look up the index of 'this_char' in our character set.
+                // Since 'this' is valid, this should not fail.
                 *self.chars_lookup.get(this_char).unwrap()
             };
 
             let that_char_position: usize = {
+                // Similarly, attempt to get the character from 'that' at the current index.
+                // If 'that' is shorter than the current index, we default to 'self.high' (highest character).
                 let that_char = that_chars.get(index).unwrap_or(&self.high);
+                // Look up the index of 'that_char' in our character set.
                 *self.chars_lookup.get(that_char).unwrap()
             };
+
+            // Now, 'this_char_position' and 'that_char_position' represent the positions of the characters
+            // at the current index in 'this' and 'that' within our character set 'self.chars'.
+            // Since 'this' is less than 'that', we should have 'this_char_position' <= 'that_char_position'.
+
+            // Our aim is to select a character to add to 'between_string' that will help us
+            // construct a string that is lexicographically between 'this' and 'that'.
 
             // invariant: this_char_position <= that_char_position
 
@@ -128,8 +168,14 @@ impl Between {
                 // If there are characters between this_char_position and that_char_position,
                 // then we can pick the midpoint of the character candidate between them.
                 // We also do this if we go past the maximum length of of either this or that.
+
+                // Determine the position of the candidate character to add.
                 let char_position: usize = if ((this_char_position + 1) < that_char_position)
+                    // If there are characters available between 'this_char_position' and 'that_char_position':
+                    // - This means we can choose a character that is greater than 'this_char' but less than 'that_char'.
                     || index >= guard_max_len
+                // Or if we've reached beyond the maximum length of 'this' and 'that':
+                // - This allows us to append additional characters to make 'between_string' greater than 'this'.
                 {
                     // invariant: self.chars.len() >= 2
                     // If (this_char_position + 1) < that_char_position, then:
@@ -138,28 +184,47 @@ impl Between {
                     // This implies self.chars.len() >= 3. As in, this works for character sets of size 3 or more.
                     //
                     // For 2 character sets, we rely on: index >= guard_max_len
+
+                    // Calculate the midpoint between 'this_char_position' and 'that_char_position'.
+                    // We use the average and round it to the nearest integer to select a middle character.
                     ((this_char_position as f64 + that_char_position as f64) / 2.0).round() as usize
                 } else {
                     // We use this_char_position so that the character candidate will be less than that_char_position
                     // in lexicographical order/ASCII order.
+
+                    // If there are no characters in between, and we're still within the lengths,
+                    // we use 'this_char_position' to keep 'between_string' as close as possible to 'this'.
                     this_char_position
                 };
 
+                // Retrieve the character at 'char_position' from 'self.chars'.
+                // This is our candidate character to add to 'between_string'.
                 self.chars[char_position]
             };
 
+            // Add the candidate character to 'between_string'.
             between_string.push(char_candidate);
 
+            // Now, we check if 'between_string' satisfies the conditions:
+            // - It is lexicographically greater than 'this_chars'.
+            // - It is lexicographically less than 'that_chars'.
+            // - The last character added is not 'self.low' (to avoid trailing low characters).
             if (this_chars < between_string)
                 && (between_string < that_chars)
                 && char_candidate != self.low
             {
+                // If all conditions are met, we have successfully found a valid 'between' string.
+                // Convert 'between_string' from a vector of chars back into a String and return it.
                 return Some(String::from_iter(between_string));
             }
 
+            // If the conditions are not met, we proceed to the next index.
+            // This allows us to modify the next character in 'between_string' to try to satisfy the conditions.
             index += 1;
         }
 
+        // If we have exhausted all possibilities within the guard limit and not found a valid 'between' string,
+        // we return 'None' to indicate failure.
         None
     }
 
